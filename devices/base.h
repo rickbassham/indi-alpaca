@@ -1,5 +1,19 @@
 
+#pragma once
+#ifndef ALPACABASE_H
+#define ALPACABASE_H
+
 #include <libindi/defaultdevice.h>
+#include "jsonRequest.h"
+
+#define ALPACA_ERROR_NOT_IMPLEMENTED 0x400
+#define ALPACA_ERROR_INVALID_VALUE 0x401
+#define ALPACA_ERROR_VALUE_NOT_SET 0x402
+#define ALPACA_ERROR_NOT_CONNECTED 0x407
+#define ALPACA_ERROR_INVALID_WHILE_PARKED 0x408
+#define ALPACA_ERROR_INVALID_WHILE_SLAVED 0x409
+#define ALPACA_ERROR_INVALID_OPERATION 0x40B
+#define ALPACA_ERROR_ACTION_NOT_IMPLEMENTED 0x40C
 
 namespace INDI
 {
@@ -11,7 +25,18 @@ namespace INDI
 class AlpacaBase : public DefaultDevice
 {
 public:
-    AlpacaBase();
+    AlpacaBase(
+        std::string serverName,
+        std::string manufacturer,
+        std::string manufacturerVersion,
+        std::string location,
+        std::string deviceName,
+        std::string deviceType,
+        uint32_t deviceNumber,
+        std::string uniqueId,
+        std::string ipAddress,
+        uint16_t port
+    );
     virtual ~AlpacaBase() = default;
 
     void ISGetProperties(const char *dev) override;
@@ -42,6 +67,16 @@ protected:
     std::string _uniqueId;
     std::string _ipAddress;
     uint16_t _port;
+
+private:
+    uint32_t _clientId;
+    uint32_t _clientTransactionId;
+
+protected:
+    nlohmann::json doGetRequest(const std::string url);
+    nlohmann::json doPutRequest(const std::string url, std::map<std::string, std::string> &body);
+    bool putConnected(const bool connected);
+    bool getConnected();
 
 protected:
 
@@ -110,3 +145,5 @@ protected:
 }; // class AlpacaBase
 
 }; // namespace INDI
+
+#endif // ALPACABASE_H

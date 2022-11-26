@@ -1,5 +1,6 @@
 #include <deque>
 #include <memory>
+#include <string>
 
 #if defined(_WIN32) || defined(__USE_W32_SOCKETS)
 #include <winsock2.h>
@@ -23,9 +24,7 @@
 #include <libindi/indidevapi.h>
 #include <libindi/json.h>
 
-#include "devices/base.h"
-
-#include "jsonRequest.h"
+#include "discovery.h"
 
 #define ALPACA_DISCOVERY_PORT 32227
 #define RECEIVE_BUFFER_SIZE 64
@@ -142,6 +141,13 @@ public:
                     IDLog("DeviceType: %s\n", deviceType.c_str());
                     IDLog("DeviceNumber: %d\n", deviceNumber);
                     IDLog("UniqueID: %s\n\n", uniqueId.c_str());
+
+                    std::transform(deviceType.begin(), deviceType.end(), deviceType.begin(), ::tolower);
+
+                    if (deviceType == "covercalibrator")
+                    {
+                        devices.push_back(std::unique_ptr<AlpacaBase>(new CoverCalibrator(serverName, manufacturer, manufacturerVersion, location, deviceName, deviceType, deviceNumber, uniqueId, deviceIP, port)));
+                    }
                 }
                 // lights.push_back(std::unique_ptr<DragonLight>(new DragonLight(std::string(str))));
             }

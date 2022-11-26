@@ -44,6 +44,8 @@ include(CMakeCommon)
 add_executable(
     indi_alpaca
     devices/base.cpp
+    devices/covercalibrator.cpp
+    jsonrequest.cpp
     discovery.cpp
 )
 
