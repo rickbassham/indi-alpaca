@@ -75,6 +75,12 @@ private:
 protected:
     nlohmann::json doGetRequest(const std::string url);
     nlohmann::json doPutRequest(const std::string url, std::map<std::string, std::string> &body);
+
+    nlohmann::json doDeviceGetRequest(const std::string url);
+    nlohmann::json doDevicePutRequest(const std::string url, std::map<std::string, std::string> &body);
+
+    bool hasError(nlohmann::json &response);
+
     bool putConnected(const bool connected);
     bool getConnected();
 

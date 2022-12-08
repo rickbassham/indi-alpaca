@@ -75,7 +75,7 @@ public:
 
         char sendMSG[17] = "alpacadiscovery1";
 
-        sendto(s, sendMSG, sizeof(sendMSG), 0, (sockaddr *)&Recv_addr, sizeof(Recv_addr));
+        sendto(s, sendMSG, strlen(sendMSG), 0, (sockaddr *)&Recv_addr, sizeof(Recv_addr));
 
         while (true)
         {

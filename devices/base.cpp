@@ -7,19 +7,6 @@
 
 using namespace INDI;
 
-template<typename ... Args>
-std::string string_format( const std::string& format, Args ... args )
-{
-    int size_s = std::snprintf( nullptr, 0, format.c_str(), args ... ) + 1; // Extra space for '\0'
-    if( size_s <= 0 ) {
-        throw std::runtime_error( "Error during formatting." );
-    }
-    auto size = static_cast<size_t>( size_s );
-    std::unique_ptr<char[]> buf( new char[ size ] );
-    std::snprintf( buf.get(), size, format.c_str(), args ... );
-    return std::string( buf.get(), buf.get() + size - 1 ); // We don't want the '\0' inside
-}
-
 AlpacaBase::AlpacaBase(
     std::string serverName,
     std::string manufacturer,
@@ -124,14 +111,14 @@ bool AlpacaBase::initProperties()
 
     addAuxControls();
 
-    setDriverInterface(getDriverInterface() | BaseDevice::DUSTCAP_INTERFACE | BaseDevice::LIGHTBOX_INTERFACE);
-
     return true;
 }
 
 bool AlpacaBase::updateProperties()
 {
-    return false;
+    INDI::DefaultDevice::updateProperties();
+
+    return true;
 }
 
 const char *AlpacaBase::getDefaultName()
@@ -141,17 +128,19 @@ const char *AlpacaBase::getDefaultName()
 
 bool AlpacaBase::saveConfigItems(FILE *fp)
 {
-    return false;
+    DefaultDevice::saveConfigItems(fp);
+
+    return true;
 }
 
 bool AlpacaBase::Connect()
 {
-    return false;
+    return putConnected(true);
 }
 
 bool AlpacaBase::Disconnect()
 {
-    return false;
+    return putConnected(false);
 }
 
 void AlpacaBase::TimerHit()
@@ -161,39 +150,76 @@ void AlpacaBase::TimerHit()
 
 nlohmann::json AlpacaBase::doGetRequest(const std::string url)
 {
-    std::string fullUrl = string_format("http://%s:%u/api/v1/%s?clientId=%u&clientTransactionId=%u", _ipAddress, _port, url, _clientId, _clientTransactionId);
+    std::string fullUrl = "http://" + _ipAddress + ":" + std::to_string(_port) + url + "?clientId=" + std::to_string(_clientId) + "&clientTransactionId=" + std::to_string(_clientTransactionId);
+
+    IDLog("GET %s\n", fullUrl.c_str());
 
     return get_json(fullUrl.c_str());
 }
 
 nlohmann::json AlpacaBase::doPutRequest(const std::string url, std::map<std::string, std::string> &body)
 {
-    std::string fullUrl = string_format("http://%s:%u/api/v1/%s", _ipAddress, _port, url);
+    std::string fullUrl = "http://" + _ipAddress + ":" + std::to_string(_port) +  url;
+
+    IDLog("PUT %s\n", fullUrl.c_str());
 
     body["clientId"] = std::to_string(_clientId);
     body["clientTransactionId"] = std::to_string(_clientTransactionId);
 
-    return get_json(fullUrl.c_str());
+    return put_json(fullUrl.c_str(), body);
+}
+
+nlohmann::json AlpacaBase::doDeviceGetRequest(const std::string url)
+{
+    std::string deviceUrl = "/api/v1/" + _deviceType + "/" + std::to_string(_deviceNumber) + url;
+
+    return doGetRequest(deviceUrl);
+}
+
+nlohmann::json AlpacaBase::doDevicePutRequest(const std::string url, std::map<std::string, std::string> &body)
+{
+    std::string deviceUrl = "/api/v1/" + _deviceType + "/" + std::to_string(_deviceNumber) + url;
+
+    return doPutRequest(deviceUrl, body);
+}
+
+bool AlpacaBase::hasError(nlohmann::json &doc)
+{
+    if (doc == nullptr)
+    {
+        LOG_ERROR("Non-200 response from Alpaca device.");
+        return true;
+    }
+
+    if (doc.contains("ErrorNumber") && doc["ErrorNumber"] > 0)
+    {
+        LOGF_ERROR("Error: %d %s", doc["ErrorNumber"].get<int>(), doc["ErrorMessage"].get<std::string>().c_str());
+        return true;
+    }
+
+    return false;
 }
 
 bool AlpacaBase::putConnected(const bool connected)
 {
-    std::string url = string_format("/api/v1/%s/%u/connected", _deviceType, _deviceNumber);
     std::map<std::string, std::string> body;
 
     body["Connected"] = connected;
 
-    return doPutRequest(url, body);
+    auto response = doDevicePutRequest("/connected", body);
+
+    if (hasError(response))
+        return false;
+
+    return true;
 }
 
 bool AlpacaBase::getConnected()
 {
-    std::string url = string_format("/api/v1/%s/%u/connected", _deviceType, _deviceNumber);
+    nlohmann::json response = doDeviceGetRequest("/connected");
 
-    nlohmann::json response = doGetRequest(url);
-
-    if (response == nullptr)
+    if (hasError(response))
         return false;
 
-    return response["Value"].get<bool>();
+    return true;
 }
