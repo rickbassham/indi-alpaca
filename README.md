@@ -30,3 +30,9 @@ When the indi_alpaca driver is started, it broadcasts a UDP packet with the mess
 ```
 make clean && make build
 ```
+
+## Links
+
+* [ASCOM Alpaca API Reference](https://raw.githubusercontent.com/ASCOMInitiative/ASCOMRemote/master/Documentation/ASCOM%20Alpaca%20API%20Reference.pdf)
+* [ASCOM Alpaca REST Spec](https://ascom-standards.org/api/)
+* [ASCOM Documentation](https://ascom-standards.org/Help/Developer/html/N_ASCOM_DeviceInterface.htm)
