@@ -1,3 +1,4 @@
+#include "config.h"
 #include "covercalibrator.h"
 
 using namespace INDI;
@@ -16,6 +17,7 @@ CoverCalibrator::CoverCalibrator(
     uint16_t port
 )
     : AlpacaBase(
+          this,
           serverName,
           manufacturer,
           manufacturerVersion,
@@ -28,11 +30,12 @@ CoverCalibrator::CoverCalibrator(
           port
       ), LightBoxInterface(this, true)
 {
+    setVersion(VERSION_MAJOR, VERSION_MINOR);
 }
 
 void CoverCalibrator::ISGetProperties(const char *dev)
 {
-    AlpacaBase::ISGetProperties(dev);
+    DefaultDevice::ISGetProperties(dev);
 
     // Get Light box properties
     isGetLightBoxProperties(dev);
@@ -45,7 +48,7 @@ bool CoverCalibrator::ISNewNumber(const char *dev, const char *name, double valu
         return true;
     }
 
-    return AlpacaBase::ISNewNumber(dev, name, values, names, n);
+    return DefaultDevice::ISNewNumber(dev, name, values, names, n);
 }
 
 bool CoverCalibrator::ISNewSwitch(const char *dev, const char *name, ISState *states, char *names[], int n)
@@ -55,7 +58,12 @@ bool CoverCalibrator::ISNewSwitch(const char *dev, const char *name, ISState *st
         return true;
     }
 
-    return AlpacaBase::ISNewSwitch(dev, name, states, names, n);
+    if (processDustCapSwitch(dev, name, states, names, n))
+    {
+        return true;
+    }
+
+    return DefaultDevice::ISNewSwitch(dev, name, states, names, n);
 }
 
 bool CoverCalibrator::ISNewText(const char *dev, const char *name, char *texts[], char *names[], int n)
@@ -65,29 +73,33 @@ bool CoverCalibrator::ISNewText(const char *dev, const char *name, char *texts[]
         return true;
     }
 
-    return AlpacaBase::ISNewText(dev, name, texts, names, n);
+    return DefaultDevice::ISNewText(dev, name, texts, names, n);
 }
 
 bool CoverCalibrator::ISSnoopDevice(XMLEle *root)
 {
     snoopLightBox(root);
 
-    return AlpacaBase::ISSnoopDevice(root);
+    return DefaultDevice::ISSnoopDevice(root);
 }
 
 bool CoverCalibrator::initProperties()
 {
-    AlpacaBase::initProperties();
+    INDI::DefaultDevice::initProperties();
+
+    initAlpacaBaseProperties();
 
     initLightBoxProperties(getDeviceName(), MAIN_CONTROL_TAB);
     initDustCapProperties(getDeviceName(), MAIN_CONTROL_TAB);
+
+    addAuxControls();
 
     return true;
 }
 
 bool CoverCalibrator::updateProperties()
 {
-    AlpacaBase::updateProperties();
+    INDI::DefaultDevice::updateProperties();
 
     if (isConnected())
     {
@@ -120,6 +132,13 @@ bool CoverCalibrator::updateProperties()
     }
 
     updateLightBoxProperties();
+
+    return true;
+}
+
+bool CoverCalibrator::saveConfigItems(FILE *fp)
+{
+    DefaultDevice::saveConfigItems(fp);
 
     return true;
 }
@@ -311,23 +330,23 @@ bool CoverCalibrator::putOpenCover()
 
 bool CoverCalibrator::Connect()
 {
-    if (!AlpacaBase::Connect())
-        return false;
+    bool rc = putConnected(true);
 
-    return true;
+    if (rc)
+        SetTimer(POLLMS);
+
+    return rc;
 }
 
 bool CoverCalibrator::Disconnect()
 {
-    if (!AlpacaBase::Disconnect())
-        return false;
-
-    return true;
+    return putConnected(false);
 }
 
 void CoverCalibrator::TimerHit()
 {
-    AlpacaBase::TimerHit();
+    if (!isConnected())
+        return;
 
     IDLog("CoverCalibrator::TimerHit\n");
 
@@ -348,7 +367,7 @@ void CoverCalibrator::TimerHit()
         case Cover_Open:
             ParkCapSP.s = IPS_IDLE;
             IUResetSwitch(&ParkCapSP);
-            ParkCapS[CAP_PARK].s = ISS_ON;
+            ParkCapS[CAP_UNPARK].s = ISS_ON;
             break;
 
         case Cover_Moving:
@@ -409,6 +428,13 @@ void CoverCalibrator::TimerHit()
             IDSetNumber(&LightIntensityNP, nullptr);
         }
     }
+
+    SetTimer(POLLMS);
+}
+
+const char *CoverCalibrator::getDefaultName()
+{
+    return _deviceName.c_str();
 }
 
 bool CoverCalibrator::supportsLightBox()
@@ -437,14 +463,6 @@ bool CoverCalibrator::EnableLightBox(bool enable)
 
 bool CoverCalibrator::SetLightBoxBrightness(uint16_t value)
 {
-    uint16_t original = (uint16_t)LightIntensityN[0].value;
-
-    if (value == original)
-        return true;
-
-    LightIntensityN[0].value = value;
-    IDSetNumber(&LightIntensityNP, nullptr);
-
     if (LightS[FLAT_LIGHT_ON].s == ISS_ON)
     {
         return putCalibratorOn();

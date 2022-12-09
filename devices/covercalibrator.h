@@ -3,13 +3,14 @@
 #define COVERCALIBRATOR_H
 
 #include "base.h"
+#include <libindi/defaultdevice.h>
 #include <libindi/indilightboxinterface.h>
 #include <libindi/indidustcapinterface.h>
 
 
 namespace INDI
 {
-class CoverCalibrator : public AlpacaBase, public DustCapInterface, public LightBoxInterface
+class CoverCalibrator : public DefaultDevice, public AlpacaBase, public DustCapInterface, public LightBoxInterface
 {
 public:
     enum AlpacaCoverStatus
@@ -59,9 +60,11 @@ protected:
     virtual bool Connect() override;
     virtual bool Disconnect() override;
     void TimerHit() override;
+    const char *getDefaultName() override;
 
     virtual bool initProperties() override;
     virtual bool updateProperties() override;
+    virtual bool saveConfigItems(FILE *fp) override;
 
 protected:
     virtual bool SetLightBoxBrightness(uint16_t value) override;

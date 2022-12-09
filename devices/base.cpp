@@ -5,9 +5,12 @@
 #include <string>
 #include <stdexcept>
 
+#include <libindi/defaultdevice.h>
+
 using namespace INDI;
 
 AlpacaBase::AlpacaBase(
+    DefaultDevice *device,
     std::string serverName,
     std::string manufacturer,
     std::string manufacturerVersion,
@@ -19,10 +22,8 @@ AlpacaBase::AlpacaBase(
     std::string ipAddress,
     uint16_t port
 )
-    : DefaultDevice()
 {
-    setVersion(VERSION_MAJOR, VERSION_MINOR);
-
+    _device = device;
     _serverName = serverName;
     _manufacturer = manufacturer;
     _manufacturerVersion = manufacturerVersion;
@@ -35,125 +36,44 @@ AlpacaBase::AlpacaBase(
     _port = port;
 }
 
-void AlpacaBase::ISGetProperties(const char *dev)
+bool AlpacaBase::initAlpacaBaseProperties()
 {
-    DefaultDevice::ISGetProperties(dev);
-}
-
-bool AlpacaBase::ISNewNumber(const char *dev, const char *name, double values[], char *names[], int n)
-{
-    if (DefaultDevice::ISNewNumber(dev, name, values, names, n))
-        return true;
-
-    return false;
-}
-
-bool AlpacaBase::ISNewSwitch(const char *dev, const char *name, ISState *states, char *names[], int n)
-{
-    if (DefaultDevice::ISNewSwitch(dev, name, states, names, n))
-        return true;
-
-    return false;
-}
-
-bool AlpacaBase::ISNewText(const char *dev, const char *name, char *texts[], char *names[], int n)
-{
-    if (DefaultDevice::ISNewText(dev, name, texts, names, n))
-        return true;
-
-    return false;
-}
-
-bool AlpacaBase::ISSnoopDevice(XMLEle *root)
-{
-    return DefaultDevice::ISSnoopDevice(root);
-
-    return false;
-}
-
-bool AlpacaBase::initProperties()
-{
-    INDI::DefaultDevice::initProperties();
-
     serverDescriptionTP[ServerDescription::SERVER_NAME].fill("SERVER_NAME", "Server Name", _serverName);
     serverDescriptionTP[ServerDescription::MANUFACTURER].fill("MANUFACTURER", "Manufacturer", _manufacturer);
     serverDescriptionTP[ServerDescription::MANUFACTURER_VERSION].fill("MANUFACTURER_VERSION", "Manufacturer Version", _manufacturerVersion);
     serverDescriptionTP[ServerDescription::LOCATION].fill("LOCATION", "Location", _location);
-    serverDescriptionTP.fill(getDeviceName(), "SERVER_DESCRIPTION", "Server Description", INFO_TAB, IP_RO, 60, IPS_IDLE);
-    registerProperty(serverDescriptionTP);
+    serverDescriptionTP.fill(_device->getDeviceName(), "SERVER_DESCRIPTION", "Server Description", INFO_TAB, IP_RO, 60, IPS_IDLE);
+    _device->registerProperty(serverDescriptionTP);
 
     configuredDeviceTP[ConfiguredDevice::DEVICE_NAME].fill("DEVICE_NAME", "Device Name", _deviceName);
     configuredDeviceTP[ConfiguredDevice::DEVICE_TYPE].fill("DEVICE_TYPE", "Device Type", _deviceType);
     configuredDeviceTP[ConfiguredDevice::DEVICE_NUMBER].fill("DEVICE_NUMBER", "Device Number", std::to_string(_deviceNumber));
     configuredDeviceTP[ConfiguredDevice::UNIQUE_ID].fill("UNIQUE_ID", "Unique ID", _uniqueId);
-    configuredDeviceTP.fill(getDeviceName(), "CONFIGURED_DEVICE", "Configured Device", INFO_TAB, IP_RO, 60, IPS_IDLE);
-    registerProperty(configuredDeviceTP);
+    configuredDeviceTP.fill(_device->getDeviceName(), "CONFIGURED_DEVICE", "Configured Device", INFO_TAB, IP_RO, 60, IPS_IDLE);
+    _device->registerProperty(configuredDeviceTP);
 
     deviceTP[Device::DEVICE_DESCRIPTION].fill("DEVICE_DESCRIPTION", "Device Description", "");
-    deviceTP.fill(getDeviceName(), "DEVICE", "Device", INFO_TAB, IP_RO, 60, IPS_IDLE);
-    registerProperty(deviceTP);
+    deviceTP.fill(_device->getDeviceName(), "DEVICE", "Device", INFO_TAB, IP_RO, 60, IPS_IDLE);
+    _device->registerProperty(deviceTP);
 
     driverInfoTP[DriverInfo::DRIVER_DESCRIPTION].fill("DRIVER_DESCRIPTION", "Driver Description", "");
-    driverInfoTP.fill(getDeviceName(), "DRIVER_INFO", "Driver Info", INFO_TAB, IP_RO, 60, IPS_IDLE);
-    registerProperty(driverInfoTP);
+    driverInfoTP.fill(_device->getDeviceName(), "DRIVER_INFO", "Driver Info", INFO_TAB, IP_RO, 60, IPS_IDLE);
+    _device->registerProperty(driverInfoTP);
 
     driverVersionTP[DriverVersion::DRIVER_VERSION].fill("DRIVER_VERSION", "Driver Version", "");
-    driverVersionTP.fill(getDeviceName(), "DRIVER_VERSION", "Driver Version", INFO_TAB, IP_RO, 60, IPS_IDLE);
-    registerProperty(driverVersionTP);
+    driverVersionTP.fill(_device->getDeviceName(), "DRIVER_VERSION", "Driver Version", INFO_TAB, IP_RO, 60, IPS_IDLE);
+    _device->registerProperty(driverVersionTP);
 
     interfaceVersionNP[InterfaceVersion::INTERFACE_VERSION].fill("INTERFACE_VERSION", "Interface Version", "%d", 0, 0, 0, 0);
-    interfaceVersionNP.fill(getDeviceName(), "INTERFACE_VERSION", "Interface Version", INFO_TAB, IP_RO, 60, IPS_IDLE);
-    registerProperty(interfaceVersionNP);
+    interfaceVersionNP.fill(_device->getDeviceName(), "INTERFACE_VERSION", "Interface Version", INFO_TAB, IP_RO, 60, IPS_IDLE);
+    _device->registerProperty(interfaceVersionNP);
 
     nameTP[Name::NAME].fill("NAME", "Name", "");
-    nameTP.fill(getDeviceName(), "NAME", "Name", INFO_TAB, IP_RO, 60, IPS_IDLE);
-    registerProperty(nameTP);
+    nameTP.fill(_device->getDeviceName(), "NAME", "Name", INFO_TAB, IP_RO, 60, IPS_IDLE);
+    _device->registerProperty(nameTP);
 
-    addAuxControls();
-
-    return true;
-}
-
-bool AlpacaBase::updateProperties()
-{
-    INDI::DefaultDevice::updateProperties();
 
     return true;
-}
-
-const char *AlpacaBase::getDefaultName()
-{
-    return "AlpacaBase";
-}
-
-bool AlpacaBase::saveConfigItems(FILE *fp)
-{
-    DefaultDevice::saveConfigItems(fp);
-
-    return true;
-}
-
-bool AlpacaBase::Connect()
-{
-    bool rc = putConnected(true);
-
-    if (rc)
-        SetTimer(POLLMS);
-
-    return rc;
-}
-
-bool AlpacaBase::Disconnect()
-{
-    return putConnected(false);
-}
-
-void AlpacaBase::TimerHit()
-{
-    if (!isConnected())
-        return;
-
-    SetTimer(POLLMS);
 }
 
 nlohmann::json AlpacaBase::doGetRequest(const std::string url)
@@ -191,13 +111,13 @@ bool AlpacaBase::hasError(nlohmann::json &doc)
 {
     if (doc == nullptr)
     {
-        LOG_ERROR("Non-200 response from Alpaca device.");
+        DEBUGDEVICE(_device->getDeviceName(), INDI::Logger::DBG_ERROR, "Non-200 response from Alpaca device.");
         return true;
     }
 
     if (doc.contains("ErrorNumber") && doc["ErrorNumber"] > 0)
     {
-        LOGF_ERROR("Error: %d %s", doc["ErrorNumber"].get<int>(), doc["ErrorMessage"].get<std::string>().c_str());
+        DEBUGFDEVICE(_device->getDeviceName(), INDI::Logger::DBG_ERROR,"Error: %d %s", doc["ErrorNumber"].get<int>(), doc["ErrorMessage"].get<std::string>().c_str());
         return true;
     }
 

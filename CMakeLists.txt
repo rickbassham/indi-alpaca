@@ -45,6 +45,7 @@ add_executable(
     indi_alpaca
     devices/base.cpp
     devices/covercalibrator.cpp
+    devices/dome.cpp
     jsonrequest.cpp
     discovery.cpp
 )

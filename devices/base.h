@@ -3,7 +3,9 @@
 #ifndef ALPACABASE_H
 #define ALPACABASE_H
 
-#include <libindi/defaultdevice.h>
+#include <libindi/indibase.h>
+#include <libindi/indipropertytext.h>
+#include <libindi/indipropertynumber.h>
 #include "jsonRequest.h"
 
 #define ALPACA_ERROR_NOT_IMPLEMENTED 0x400
@@ -22,10 +24,11 @@ namespace INDI
  *
  * @author Rick Bassham
  */
-class AlpacaBase : public DefaultDevice
+class AlpacaBase
 {
 public:
     AlpacaBase(
+        DefaultDevice *device,
         std::string serverName,
         std::string manufacturer,
         std::string manufacturerVersion,
@@ -39,22 +42,8 @@ public:
     );
     virtual ~AlpacaBase() = default;
 
-    void ISGetProperties(const char *dev) override;
-
-    virtual bool ISNewNumber(const char *dev, const char *name, double values[], char *names[], int n) override;
-    virtual bool ISNewSwitch(const char *dev, const char *name, ISState *states, char *names[], int n) override;
-    virtual bool ISNewText(const char *dev, const char *name, char *texts[], char *names[], int n) override;
-    virtual bool ISSnoopDevice(XMLEle *root) override;
-
 protected:
-    virtual bool initProperties() override;
-    virtual bool updateProperties() override;
-    const char *getDefaultName() override;
-    virtual bool saveConfigItems(FILE *fp) override;
-
-    virtual bool Connect() override;
-    virtual bool Disconnect() override;
-    void TimerHit() override;
+    virtual bool initAlpacaBaseProperties();
 
 protected:
     std::string _serverName;
@@ -71,6 +60,8 @@ protected:
 private:
     uint32_t _clientId;
     uint32_t _clientTransactionId;
+    DefaultDevice *_device;
+
 
 protected:
     nlohmann::json doGetRequest(const std::string url);
