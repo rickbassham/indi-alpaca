@@ -146,7 +146,11 @@ public:
 
                     if (deviceType == "covercalibrator")
                     {
-                        devices.push_back(std::unique_ptr<AlpacaBase>(new CoverCalibrator(serverName, manufacturer, manufacturerVersion, location, deviceName, deviceType, deviceNumber, uniqueId, deviceIP, port)));
+                        devices.push_back(std::unique_ptr<AlpacaBase>(new AlpacaCoverCalibrator(serverName, manufacturer, manufacturerVersion, location, deviceName, deviceType, deviceNumber, uniqueId, deviceIP, port)));
+                    }
+                    else if (deviceType == "dome")
+                    {
+                        devices.push_back(std::unique_ptr<AlpacaBase>(new AlpacaDome(serverName, manufacturer, manufacturerVersion, location, deviceName, deviceType, deviceNumber, uniqueId, deviceIP, port)));
                     }
                 }
                 // lights.push_back(std::unique_ptr<DragonLight>(new DragonLight(std::string(str))));

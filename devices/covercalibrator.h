@@ -10,7 +10,7 @@
 
 namespace INDI
 {
-class CoverCalibrator : public DefaultDevice, public AlpacaBase, public DustCapInterface, public LightBoxInterface
+class AlpacaCoverCalibrator : public DefaultDevice, public AlpacaBase, public DustCapInterface, public LightBoxInterface
 {
 public:
     enum AlpacaCoverStatus
@@ -35,7 +35,7 @@ public:
 
 
 public:
-    CoverCalibrator(
+    AlpacaCoverCalibrator(
         std::string serverName,
         std::string manufacturer,
         std::string manufacturerVersion,
@@ -47,7 +47,7 @@ public:
         std::string ipAddress,
         uint16_t port
     );
-    virtual ~CoverCalibrator() = default;
+    virtual ~AlpacaCoverCalibrator() = default;
 
     void ISGetProperties(const char *dev) override;
 

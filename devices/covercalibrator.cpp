@@ -4,7 +4,7 @@
 using namespace INDI;
 
 
-CoverCalibrator::CoverCalibrator(
+AlpacaCoverCalibrator::AlpacaCoverCalibrator(
     std::string serverName,
     std::string manufacturer,
     std::string manufacturerVersion,
@@ -33,7 +33,7 @@ CoverCalibrator::CoverCalibrator(
     setVersion(VERSION_MAJOR, VERSION_MINOR);
 }
 
-void CoverCalibrator::ISGetProperties(const char *dev)
+void AlpacaCoverCalibrator::ISGetProperties(const char *dev)
 {
     DefaultDevice::ISGetProperties(dev);
 
@@ -41,7 +41,7 @@ void CoverCalibrator::ISGetProperties(const char *dev)
     isGetLightBoxProperties(dev);
 }
 
-bool CoverCalibrator::ISNewNumber(const char *dev, const char *name, double values[], char *names[], int n)
+bool AlpacaCoverCalibrator::ISNewNumber(const char *dev, const char *name, double values[], char *names[], int n)
 {
     if (processLightBoxNumber(dev, name, values, names, n))
     {
@@ -51,7 +51,7 @@ bool CoverCalibrator::ISNewNumber(const char *dev, const char *name, double valu
     return DefaultDevice::ISNewNumber(dev, name, values, names, n);
 }
 
-bool CoverCalibrator::ISNewSwitch(const char *dev, const char *name, ISState *states, char *names[], int n)
+bool AlpacaCoverCalibrator::ISNewSwitch(const char *dev, const char *name, ISState *states, char *names[], int n)
 {
     if (processLightBoxSwitch(dev, name, states, names, n))
     {
@@ -66,7 +66,7 @@ bool CoverCalibrator::ISNewSwitch(const char *dev, const char *name, ISState *st
     return DefaultDevice::ISNewSwitch(dev, name, states, names, n);
 }
 
-bool CoverCalibrator::ISNewText(const char *dev, const char *name, char *texts[], char *names[], int n)
+bool AlpacaCoverCalibrator::ISNewText(const char *dev, const char *name, char *texts[], char *names[], int n)
 {
     if (processLightBoxText(dev, name, texts, names, n))
     {
@@ -76,14 +76,14 @@ bool CoverCalibrator::ISNewText(const char *dev, const char *name, char *texts[]
     return DefaultDevice::ISNewText(dev, name, texts, names, n);
 }
 
-bool CoverCalibrator::ISSnoopDevice(XMLEle *root)
+bool AlpacaCoverCalibrator::ISSnoopDevice(XMLEle *root)
 {
     snoopLightBox(root);
 
     return DefaultDevice::ISSnoopDevice(root);
 }
 
-bool CoverCalibrator::initProperties()
+bool AlpacaCoverCalibrator::initProperties()
 {
     INDI::DefaultDevice::initProperties();
 
@@ -97,7 +97,7 @@ bool CoverCalibrator::initProperties()
     return true;
 }
 
-bool CoverCalibrator::updateProperties()
+bool AlpacaCoverCalibrator::updateProperties()
 {
     INDI::DefaultDevice::updateProperties();
 
@@ -118,9 +118,6 @@ bool CoverCalibrator::updateProperties()
             interface |= BaseDevice::LIGHTBOX_INTERFACE;
         }
 
-        IDLog("Interface: %d\n", interface);
-        IDLog("Expected Interface: %d\n", BaseDevice::AUX_INTERFACE | BaseDevice::DUSTCAP_INTERFACE | BaseDevice::LIGHTBOX_INTERFACE);
-
         setDriverInterface(interface);
         syncDriverInfo();
     }
@@ -136,18 +133,16 @@ bool CoverCalibrator::updateProperties()
     return true;
 }
 
-bool CoverCalibrator::saveConfigItems(FILE *fp)
+bool AlpacaCoverCalibrator::saveConfigItems(FILE *fp)
 {
     DefaultDevice::saveConfigItems(fp);
 
     return true;
 }
 
-int CoverCalibrator::getBrightness()
+int AlpacaCoverCalibrator::getBrightness()
 {
     nlohmann::json response = doDeviceGetRequest("/brightness");
-
-    IDLog("getBrightness\n");
 
     if (hasError(response))
     {
@@ -161,18 +156,14 @@ int CoverCalibrator::getBrightness()
 
     int brightness = response["Value"].get<int>();
 
-    IDLog("Brightness: %d\n", brightness);
-
     _supportsLightBox = true;
 
     return brightness;
 }
 
-CoverCalibrator::AlpacaCalibratorStatus CoverCalibrator::getCalibratorState()
+AlpacaCoverCalibrator::AlpacaCalibratorStatus AlpacaCoverCalibrator::getCalibratorState()
 {
     nlohmann::json response = doDeviceGetRequest("/calibratorstate");
-
-    IDLog("getCalibratorState\n");
 
     if (hasError(response))
     {
@@ -186,8 +177,6 @@ CoverCalibrator::AlpacaCalibratorStatus CoverCalibrator::getCalibratorState()
 
     AlpacaCalibratorStatus status = static_cast<AlpacaCalibratorStatus>(response["Value"].get<int>());
 
-    IDLog("Calibrator state: %d\n", status);
-
     if (status == Calibrator_NotPresent)
     {
         _supportsLightBox = false;
@@ -199,11 +188,9 @@ CoverCalibrator::AlpacaCalibratorStatus CoverCalibrator::getCalibratorState()
     return status;
 }
 
-CoverCalibrator::AlpacaCoverStatus CoverCalibrator::getCoverState()
+AlpacaCoverCalibrator::AlpacaCoverStatus AlpacaCoverCalibrator::getCoverState()
 {
     nlohmann::json response = doDeviceGetRequest("/coverstate");
-
-    IDLog("getCoverState\n");
 
     if (hasError(response))
     {
@@ -217,8 +204,6 @@ CoverCalibrator::AlpacaCoverStatus CoverCalibrator::getCoverState()
 
     AlpacaCoverStatus status = static_cast<AlpacaCoverStatus>(response["Value"].get<int>());
 
-    IDLog("Cover state: %d\n", status);
-
     if (status == Cover_NotPresent)
     {
         _supportsDustCap = false;
@@ -230,11 +215,9 @@ CoverCalibrator::AlpacaCoverStatus CoverCalibrator::getCoverState()
     return status;
 }
 
-int CoverCalibrator::getMaxBrightness()
+int AlpacaCoverCalibrator::getMaxBrightness()
 {
     nlohmann::json response = doDeviceGetRequest("/maxbrightness");
-
-    IDLog("getMaxBrightness\n");
 
     if (hasError(response))
     {
@@ -248,14 +231,12 @@ int CoverCalibrator::getMaxBrightness()
 
     int maxBrightness = response["Value"].get<int>();
 
-    IDLog("Max Brightness: %d\n", maxBrightness);
-
     _supportsLightBox = true;
 
     return maxBrightness;
 }
 
-bool CoverCalibrator::putCalibratorOff()
+bool AlpacaCoverCalibrator::putCalibratorOff()
 {
     if (!_supportsLightBox)
         return false;
@@ -269,7 +250,7 @@ bool CoverCalibrator::putCalibratorOff()
     return true;
 }
 
-bool CoverCalibrator::putCalibratorOn()
+bool AlpacaCoverCalibrator::putCalibratorOn()
 {
     if (!_supportsLightBox)
         return false;
@@ -286,7 +267,7 @@ bool CoverCalibrator::putCalibratorOn()
     return true;
 }
 
-bool CoverCalibrator::putCloseCover()
+bool AlpacaCoverCalibrator::putCloseCover()
 {
     if (!_supportsDustCap)
         return false;
@@ -300,7 +281,7 @@ bool CoverCalibrator::putCloseCover()
     return true;
 }
 
-bool CoverCalibrator::putHaltCover()
+bool AlpacaCoverCalibrator::putHaltCover()
 {
     if (!_supportsDustCap)
         return false;
@@ -314,7 +295,7 @@ bool CoverCalibrator::putHaltCover()
     return true;
 }
 
-bool CoverCalibrator::putOpenCover()
+bool AlpacaCoverCalibrator::putOpenCover()
 {
     if (!_supportsDustCap)
         return false;
@@ -328,7 +309,7 @@ bool CoverCalibrator::putOpenCover()
     return true;
 }
 
-bool CoverCalibrator::Connect()
+bool AlpacaCoverCalibrator::Connect()
 {
     bool rc = putConnected(true);
 
@@ -338,23 +319,19 @@ bool CoverCalibrator::Connect()
     return rc;
 }
 
-bool CoverCalibrator::Disconnect()
+bool AlpacaCoverCalibrator::Disconnect()
 {
     return putConnected(false);
 }
 
-void CoverCalibrator::TimerHit()
+void AlpacaCoverCalibrator::TimerHit()
 {
     if (!isConnected())
         return;
 
-    IDLog("CoverCalibrator::TimerHit\n");
-
     if (_supportsDustCap)
     {
         AlpacaCoverStatus status = getCoverState();
-
-        IDLog("Cover state: %d\n", status);
 
         switch (status)
         {
@@ -385,8 +362,6 @@ void CoverCalibrator::TimerHit()
     if (_supportsLightBox)
     {
         AlpacaCalibratorStatus status = getCalibratorState();
-
-        IDLog("Calibrator state: %d\n", status);
 
         switch (status)
         {
@@ -420,8 +395,6 @@ void CoverCalibrator::TimerHit()
     {
         int brightness = getBrightness();
 
-        IDLog("Brightness: %d\n", brightness);
-
         if (LightS[FLAT_LIGHT_ON].s == ISS_ON)
         {
             LightIntensityN[0].value = brightness;
@@ -432,24 +405,24 @@ void CoverCalibrator::TimerHit()
     SetTimer(POLLMS);
 }
 
-const char *CoverCalibrator::getDefaultName()
+const char *AlpacaCoverCalibrator::getDefaultName()
 {
     return _deviceName.c_str();
 }
 
-bool CoverCalibrator::supportsLightBox()
+bool AlpacaCoverCalibrator::supportsLightBox()
 {
     getCalibratorState();
     return _supportsLightBox;
 }
 
-bool CoverCalibrator::supportsDustCap()
+bool AlpacaCoverCalibrator::supportsDustCap()
 {
     getCoverState();
     return _supportsDustCap;
 }
 
-bool CoverCalibrator::EnableLightBox(bool enable)
+bool AlpacaCoverCalibrator::EnableLightBox(bool enable)
 {
     if (enable)
     {
@@ -461,7 +434,7 @@ bool CoverCalibrator::EnableLightBox(bool enable)
     }
 }
 
-bool CoverCalibrator::SetLightBoxBrightness(uint16_t value)
+bool AlpacaCoverCalibrator::SetLightBoxBrightness(uint16_t value)
 {
     if (LightS[FLAT_LIGHT_ON].s == ISS_ON)
     {
@@ -471,7 +444,7 @@ bool CoverCalibrator::SetLightBoxBrightness(uint16_t value)
     return true;
 }
 
-IPState CoverCalibrator::ParkCap()
+IPState AlpacaCoverCalibrator::ParkCap()
 {
     if (putCloseCover())
     {
@@ -481,7 +454,7 @@ IPState CoverCalibrator::ParkCap()
     return IPS_ALERT;
 }
 
-IPState CoverCalibrator::UnParkCap()
+IPState AlpacaCoverCalibrator::UnParkCap()
 {
     if (putOpenCover())
     {
