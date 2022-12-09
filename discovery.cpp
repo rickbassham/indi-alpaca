@@ -89,12 +89,12 @@ public:
 
             nlohmann::json doc = nlohmann::json::parse(recvbuff);
 
-            if (doc.contains("alpacaport"))
+            if (doc.contains("AlpacaPort"))
             {
                 char deviceIP[INET_ADDRSTRLEN];
                 inet_ntop(AF_INET, &(Recv_addr.sin_addr), deviceIP, INET_ADDRSTRLEN);
 
-                int port = doc["alpacaport"];
+                int port = doc["AlpacaPort"];
 
                 IDLog("Found Alpaca Device Server at %s:%d\n", deviceIP, port);
 

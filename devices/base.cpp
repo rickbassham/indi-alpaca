@@ -135,7 +135,12 @@ bool AlpacaBase::saveConfigItems(FILE *fp)
 
 bool AlpacaBase::Connect()
 {
-    return putConnected(true);
+    bool rc = putConnected(true);
+
+    if (rc)
+        SetTimer(POLLMS);
+
+    return rc;
 }
 
 bool AlpacaBase::Disconnect()
@@ -145,14 +150,15 @@ bool AlpacaBase::Disconnect()
 
 void AlpacaBase::TimerHit()
 {
+    if (!isConnected())
+        return;
 
+    SetTimer(POLLMS);
 }
 
 nlohmann::json AlpacaBase::doGetRequest(const std::string url)
 {
-    std::string fullUrl = "http://" + _ipAddress + ":" + std::to_string(_port) + url + "?clientId=" + std::to_string(_clientId) + "&clientTransactionId=" + std::to_string(_clientTransactionId);
-
-    IDLog("GET %s\n", fullUrl.c_str());
+    std::string fullUrl = "http://" + _ipAddress + ":" + std::to_string(_port) + url + "?ClientID=" + std::to_string(_clientId) + "&ClientTransactionID=" + std::to_string(_clientTransactionId);
 
     return get_json(fullUrl.c_str());
 }
@@ -161,10 +167,8 @@ nlohmann::json AlpacaBase::doPutRequest(const std::string url, std::map<std::str
 {
     std::string fullUrl = "http://" + _ipAddress + ":" + std::to_string(_port) +  url;
 
-    IDLog("PUT %s\n", fullUrl.c_str());
-
-    body["clientId"] = std::to_string(_clientId);
-    body["clientTransactionId"] = std::to_string(_clientTransactionId);
+    body["ClientID"] = std::to_string(_clientId);
+    body["ClientTransactionID"] = std::to_string(_clientTransactionId);
 
     return put_json(fullUrl.c_str(), body);
 }
